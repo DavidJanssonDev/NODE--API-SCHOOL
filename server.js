@@ -1,58 +1,53 @@
 const express = require("express");
-const { connectors } = require("googleapis/build/src/apis/connectors");
 const mysql = require("mysql2/promise");
 const app = express();
 const port = 3000;
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // ADD INTO THE DOC THE DATABASE INFORMATION AND DOCUMENTATION
 
-const DOC = {
-  "/uppgift1": `Hello World!, Lissening to port: ${port}`,
-
-  "/uppgift2/name/:username/age/:age": "username and age",
-  "/uppgift3": "query",
-  "/database": `DATABASE INFORMATION: 
-+  - Server: localhost
-+  - User: root
-+  - Password: root
-+  - Database: node_school_db 
-+  `,
-};
-
 // CTREATE DUMMY SQL DATA by this parameters username (varchar 255), fist_name (varchar 255), last_name (varchar 255), password(varchar 255 or null as standerd value) and add them in a dictonary called DUMMYDATA and each user is one key in the dictonary
-
-const HOW_MANY_DUMMY_USERS = 10;
 
 // !! DOCUMENTATION !!
 
-function GenerateDocumentationString(DOC_VALUE) {
-  let return_string = "WELLCOME TO THIS API, THIS IS THE DOCUMENTATION<br>";
-
-  return_string += "{<br>";
-  for (const [key, value] of Object.entries(DOC_VALUE)) {
-    return_string += ` <p style="padding: 0px; margin: 0px; font-size: 16px">  ${key} : ${value} </p>`;
-  }
-  return_string += "}";
-  return return_string;
-}
-
 app.get("/", function (_req, res) {
-  res.send(GenerateDocumentationString(DOC));
+  res.send(`
+  <style>  
+    p {
+      font-size: 20px;
+    }
+
+    span {
+      font-weight: bold;
+    }
+    
+    </style>
+    <h1>API DOCUMENTATION</h1>
+    <h2>GET</h2>
+    <ul>
+      <li><p><span>/ :</span> Send out the api documentation</p></li>
+      <li><p><span>/users :</span> Send out all users in the database</p></li>
+      <li><p><span>/users/:username_id :</span> Send out a specific user by id or username</p></li>
+      <li><p><span>/users/last_name/?username_id= :</span> Send out a specific user by username</p></li>
+    </ul>
+  `);
 });
 
 async function createSQLString(queryParameters) {
   if (Object.keys(queryParameters).length == 0) {
     return "SELECT * FROM users";
-  } else {
-    let sql = "SELECT * FROM users WHERE ";
-
-    for (const [key, value] of Object.entries(queryParameters)) {
-      sql += `${key} = '${value}' AND `;
-    }
-
-    return sql.slice(0, -5);
   }
+
+  let sql = "SELECT * FROM users WHERE ";
+
+  for (const [key, value] of Object.entries(queryParameters)) {
+    sql += `${key} = '${value}' AND `;
+  }
+
+  return sql.slice(0, -5);
 }
+
 // ** DATABASE **
 async function createConnectionToDataBase() {
   return mysql.createConnection({
@@ -67,6 +62,7 @@ async function createConnectionToDataBase() {
 app.get("/users", async function (_req, res) {
   let connection = await createConnectionToDataBase();
   let sql = await createSQLString(_req.query);
+  console.log(sql);
   let [result] = await connection.execute(sql);
 
   if (result.length == 0) {
@@ -128,6 +124,20 @@ app.get("/users/db_dummydata/:amout", async function (_req, res) {
   }
   console.log("DB IS NOT EMPTY, NOT INSERTING DATA");
   res.redirect("/users");
+});
+
+//  POSTS
+
+app.post("/insert", async function (_req, res) {
+  let connection = await createConnectionToDataBase();
+  console.log(_req.body);
+  let sql = `INSERT INTO users (username, first_name, last_name, password) VALUES (?,? ?,?)`;
+  await connection.execute(sql, [
+    _req.body.username,
+    _req.body.first_name,
+    _req.body.last_name,
+    _req.body.password,
+  ]);
 });
 
 app.get("/uppgift1", function (_req, res) {
