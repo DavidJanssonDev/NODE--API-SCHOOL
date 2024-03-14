@@ -131,13 +131,14 @@ app.get("/users/db_dummydata/:amout", async function (_req, res) {
 app.post("/insert", async function (_req, res) {
   let connection = await createConnectionToDataBase();
   console.log(_req.body);
-  let sql = `INSERT INTO users (username, first_name, last_name, password) VALUES (?,? ?,?)`;
+  let sql = `INSERT INTO users (username, first_name, last_name, password) VALUES (?,?, ?,?)`;
   await connection.execute(sql, [
     _req.body.username,
     _req.body.first_name,
     _req.body.last_name,
     _req.body.password,
   ]);
+  res.json({ statusbar: 200 });
 });
 
 app.get("/uppgift1", function (_req, res) {
